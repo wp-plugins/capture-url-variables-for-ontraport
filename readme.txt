@@ -1,5 +1,5 @@
 === OAP UTM Plugin ===
-Contributors: wamtengineers
+Contributors: itmooti
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 3.4

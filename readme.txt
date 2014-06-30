@@ -1,5 +1,6 @@
-c=== OAP UTM Plugin ===
+=== OAP UTM Plugin ===
 Contributors: itmooti
+Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 3.4
@@ -7,7 +8,7 @@ Stable tag: 4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-A plugin that makes it super easy to get variables from a page URL like tracked UTMs and also Referring Page and submit these into hidden fields on an Ontraport/Office Autopilot Smart Form.
+A plugin that makes it super easy to get URL variables submitted into hidden fields on an Ontraport/Office Autopilot Smart Form.
 
 == Description ==
 
@@ -33,6 +34,10 @@ Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license
 Learn More Here
 
 https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-Plugin
+
+== Upgrade Notice ==
+
+Nothing yet.
 
 == Changelog ==
 

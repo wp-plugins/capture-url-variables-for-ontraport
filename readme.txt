@@ -33,7 +33,7 @@ Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license
 
 == Screenshots ==
 
-1. Example of how the plugin looks ‘/assets/screenshot_1.png’
+1. Example of how the plugin looks `/assets/screenshot_1.png`
 
 Learn More Here
 
@@ -45,5 +45,12 @@ Nothing yet.
 
 == Changelog ==
 
+= 1.0.1 =
+
+Update for the %40 @ symbol issue
+
 = 1.0 =
-* Production Version.
+
+First Release
+
+

@@ -36,5 +36,5 @@ https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-P
 
 == Changelog ==
 
-= 1.1 =
+= 2.0 =
 * Production Version.

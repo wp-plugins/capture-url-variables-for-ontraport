@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name: OAP UTM WP Plugin
- * Plugin URI: http://www.itmooti.com.au/
- * Description: A plugin to add UTM and Referring Page fields on OAP Smart Forms
- * Version: 1.0
- * Stable tag: 1.0.1
+ * Plugin URI: http://www.itmooti.com/
+ * Description: A plugin that makes it super easy to get URL variables submitted into hidden fields on an Ontraport/Office Autopilot Smart Form.
+ * Version: 1.0.2
+ * Stable tag: 1.0.2
  * Author: ITMOOTI
- * Author URI: http://www.itmooti.com.au/
+ * Author URI: http://www.itmooti.com/
  */
 $utm_fields=array(
 	"utm_source"=>"UTM Source",
@@ -51,7 +51,22 @@ class OAPUTM
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
         add_action( 'admin_init', array( $this, 'oap_utm_init' ) );
 		add_action('wp_head', array($this, 'oap_utm_custom_js'));
+		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
     }
+	
+	public function show_license_info(){
+		$this->options = get_option( 'oap_utm_name' );
+		if(!isset($this->options['oap_utm_license_key']) || $this->options['oap_utm_license_key']==""){
+			echo '<div class="updated">
+        		<p>OAP UTM WP Plugin: How do I get License Key?<br />Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license/">http://app.itmooti.com/wp-plugins/oap-utm/license/</a> to get a License Key .</p>
+	    	</div>';
+		}
+		if($_SESSION["oap_response"]){
+			echo '<div class="error">
+        		<p>OAP UTM WP Plugin: '.$_SESSION["oap_response"].'</p>
+	    	</div>';
+		}
+	}
 	
 	public function load_admin_style(){
         wp_enqueue_style( 'chosen_css', plugins_url('js/chosen/chosen.css', __FILE__), false, '1.0.0' );
@@ -125,7 +140,7 @@ class OAPUTM
 		if(isset($this->options['oap_utm_license_key']) && $this->options['oap_utm_license_key']!=""){
 			$license_key = $this->options['oap_utm_license_key'];
 			$request= "verify";
-			$postargs = "license_key=".$license_key."&request=".$request;
+			$postargs = "domain=".urlencode($_SERVER['HTTP_HOST'])."&license_key=".urlencode($license_key)."&request=".urlencode($request);
 			$session = curl_init($this->url);
 			curl_setopt ($session, CURLOPT_POST, true);
 			curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
@@ -134,6 +149,8 @@ class OAPUTM
 			$response = json_decode(curl_exec($session));
 			curl_close($session);
 			if(isset($response->status) && $response->status=="success"){
+				if(isset($response->message))
+					$_SESSION["oap_response"]=$response->message;
 				add_settings_section(
 					'setting_oap_credentials', // ID
 					'OAP Credentials', // Title
@@ -584,6 +601,8 @@ class OAPUTM
 					else{
 						$val=query_variable($var);
 					}
+					if($val=="undefined")
+						$val="";
 				}
 				set_cookie($var, $val);
 				return $val;

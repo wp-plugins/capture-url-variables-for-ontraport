@@ -11,7 +11,7 @@ A plugin that makes it super easy to get variables from a page URL like tracked 
 
 == Description ==
 
-When somebody opts in to your Ontraport form you made want to collect other data that is being tracked. UTM variables for Google Analytics can be added to a link like this ?utm_source=google&utm_campaign=xmas these variables can then be added to a hidden field in the Ontraport form.
+When somebody opts in to your Ontraport form you made want to collect other data that is being tracked. UTM variables for Google Analytics can be added to a link like this utm_source=google&utm_campaign=xmas these variables can then be added to a hidden field in the Ontraport form.
 
 This can also be used for other hidden fields or even to pre-fill the first name and email for a particular form.
 

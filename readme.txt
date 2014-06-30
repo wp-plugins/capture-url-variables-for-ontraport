@@ -33,7 +33,7 @@ Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license
 
 == Screenshots ==
 
-1. Fully working example of the plugin in screenshot.png.
+1. Example of how the plugin looks ‘/assets/screenshot_1.png’
 
 Learn More Here
 

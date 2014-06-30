@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 3.4
-Stable tag: trunk
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,8 @@ A plugin that makes it super easy to get URL variables submitted into hidden fie
 When somebody opts in to your Ontraport form you made want to collect other data that is being tracked. UTM variables for Google Analytics can be added to a link like this utm_source=google&utm_campaign=xmas these variables can then be added to a hidden field in the Ontraport form.
 
 This can also be used for other hidden fields or even to pre-fill the first name and email for a particular form.
+
+This works for both Office Autopilot 2.4 and Ontraport 3.0
 
 == Installation ==
 

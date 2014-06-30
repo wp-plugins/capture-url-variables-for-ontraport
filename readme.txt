@@ -43,7 +43,7 @@ The free trial is for 7 days. After that you can buy a <a href="http://app.itmoo
 
 = Where can I get support? =
 
-Send us an <a href="mailto:support@itmooti.com”>EMAIL here</a> or visit our [Support Page HERE.](https://itmooti.zendesk.com/hc/en-us/ “itmooti support desk”)
+Send us an email to support@itmooti.com or visit our <a href="https://itmooti.zendesk.com/hc/en-us/">Support Page HERE</a>
 
 == Screenshots ==
 

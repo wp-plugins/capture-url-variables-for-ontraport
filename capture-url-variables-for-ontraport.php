@@ -4,6 +4,7 @@
  * Plugin URI: http://www.itmooti.com.au/
  * Description: A plugin to add UTM and Referring Page fields on OAP Smart Forms
  * Version: 1.0
+ * Stable tag: 1.0.1
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com.au/
  */

@@ -29,7 +29,7 @@ This works for both Office Autopilot 2.4 and Ontraport 3.0
 
 <a href="https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-Plugin">ITMOOTI Knowledge Base for Ontraport Apps/Integrations and Plugins</a>
 
-= How do I get License Key? =
+= How do I get a License Key? =
 
 Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license/">http://app.itmooti.com/wp-plugins/oap-utm/license/</a> to get a License Key .
 

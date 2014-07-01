@@ -25,9 +25,9 @@ This works for both Office Autopilot 2.4 and Ontraport 3.0
 
 == Frequently Asked Questions ==
 
-Learn More Here
+= Learn More In Our Knowledge Base =
 
-https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-Plugin
+<a href="https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-Plugin">ITMOOTI Knowledge Base for Ontraport Apps/Integrations and Plugins</a>
 
 = How do I get License Key? =
 

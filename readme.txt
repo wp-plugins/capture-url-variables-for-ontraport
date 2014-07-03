@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 3.9.1
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,11 @@ https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-P
 Nothing yet.
 
 == Changelog ==
+
+= 1.0.3 =
+
+* ability to change license code and keep settings already saved
+* dynamically checks license code to account holder
 
 = 1.0.2 =
 

@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.0.3
- * Stable tag: 1.0.3
+ * Version: 1.0.6
+ * Stable tag: 1.0.6
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -272,7 +272,9 @@ class OAPUTM
 												$start2+=6;
 												if(($end2=strpos($temp, '"', $start2))!==false){
 													$field_name=strip_tags(substr($temp, $start2, $end2-$start2));
-													$form_fields[]=array($field_title, $field_name);
+													if($field_name!="uid"){
+														$form_fields[]=array($field_title, $field_name);
+													}
 												}
 											}
 										}
@@ -385,7 +387,8 @@ class OAPUTM
                                                         ?>
                                                         <label for="utm_field_<?php echo $k1."_".$v["id"]?>"><?php echo $v1?></label>
                                                         <select name="utm_field_<?php echo $k1."_".$v["id"]?>">
-                                                            <?php
+                                                            <option value=""<?php if($pos && $oap_utm_user_forms[$pos][$k1]=="") echo ' selected="selected"';?>>None</option>
+															<?php
                                                             foreach($v["form_fields"] as $k2=>$v2){
                                                                 ?>
                                                                 <option value="<?php echo $v2[1]?>"<?php if($pos && $oap_utm_user_forms[$pos][$k1]==$v2[1]) echo ' selected="selected"';?>><?php echo $v2[1].""; ?></option>
@@ -448,9 +451,10 @@ class OAPUTM
 				<?php
 				if(isset($oap_utm_user_forms[$v])){
 					foreach($oap_utm_user_forms[$v] as $k1=>$v1){
-						?>
-						oap_utm_forms_fields[<?php echo $i?>].<?php echo $k1?>='<?php echo $v1?>';
+						if($v1!="uid"){?>
+							oap_utm_forms_fields[<?php echo $i?>].<?php echo $k1?>='<?php echo $v1?>';
 						<?php
+						}
 					}
 				}
 				$i++;

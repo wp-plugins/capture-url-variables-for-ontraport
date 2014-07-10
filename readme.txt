@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 3.9.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,10 @@ https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-P
 Nothing yet.
 
 == Changelog ==
+
+= 1.0.6 =
+
+* Removed the ability to set the ‘uid’ field as it was preventing forms to be submitted to Ontraport when selected as a variable.
 
 = 1.0.5 =
 

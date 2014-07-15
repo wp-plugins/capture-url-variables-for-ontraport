@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.0.6
- * Stable tag: 1.0.6
+ * Version: 1.0.8
+ * Stable tag: 1.0.8
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -27,12 +27,43 @@ $utm_extra_fields=array(
 	"lname"=>"lname",
 	"email"=>"Email",
 	"referral_page"=>"Referral Page",
+	"user_ip_address"=>"IP Address",
 	"var1"=>"var1",
 	"var2"=>"var2",
 	"var3"=>"var3",
 	"var4"=>"var4",
 	"var5"=>"var5",
 );
+if(isset($_GET["request"]) && $_GET["request"]=="get_ip"){
+	$ip = FALSE;
+    if (!empty($_SERVER["HTTP_CLIENT_IP"])) {
+        $ip = $_SERVER["HTTP_CLIENT_IP"];
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode (", ", $_SERVER['HTTP_X_FORWARDED_FOR']);
+        if ($ip) {
+            array_unshift($ips, $ip);
+            $ip = FALSE;
+        }
+        for ($i = 0; $i < count($ips); $i++) {
+            if (!eregi ("^(10|172\.16|192\.168)\.", $ips[$i])) {
+                if (version_compare(phpversion(), "5.0.0", ">=")) {
+                    if (ip2long($ips[$i]) != false) {
+                        $ip = $ips[$i];
+                        break;
+                    }
+                } else {
+                    if (ip2long($ips[$i]) != -1) {
+                        $ip = $ips[$i];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    echo ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
+	die;
+}
 class OAPUTM
 {
     /**
@@ -45,6 +76,9 @@ class OAPUTM
      * Start up
      */
     public function __construct($utm_fields, $utm_extra_fields){
+		if (!session_id()) {
+			session_start();
+		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
 		add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_style') );
@@ -60,7 +94,7 @@ class OAPUTM
         		<p>OAP UTM WP Plugin: How do I get License Key?<br />Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license/">http://app.itmooti.com/wp-plugins/oap-utm/license/</a> to get a License Key .</p>
 	    	</div>';
 		}
-		if($_SESSION["oap_response"]){
+		if(isset($_SESSION["oap_response"])){
 			echo '<div class="error">
         		<p>OAP UTM WP Plugin: '.$_SESSION["oap_response"].'</p>
 	    	</div>';
@@ -175,8 +209,8 @@ class OAPUTM
                                 <th scope="row">API Version</th>
                                 <td>
                                 	<select id="oap_utm_api_version" name="oap_utm_api_version">
-                                        <option value="api.ontraport.com"<?php echo ($ver=="api.ontraport.com"? ' selected="selected"':"")?>>V3.0</option>
-                                        <option value="api.moon-ray.com"<?php echo ($ver=="api.moon-ray.com"? ' selected="selected"':"")?>>V2.4</option>
+                                        <option value="api.ontraport.com"<?php echo ($oap_utm_api_version=="api.ontraport.com"? ' selected="selected"':"")?>>V3.0</option>
+                                        <option value="api.moon-ray.com"<?php echo ($oap_utm_api_version=="api.moon-ray.com"? ' selected="selected"':"")?>>V2.4</option>
                                     </select>
                                	</td>
                             </tr>
@@ -210,7 +244,7 @@ class OAPUTM
      * Print the Section text
      */
     public function get_oap_forms(){
-		set_time_limit(1000);
+		set_time_limit(5000);
 		$oap_utm_user_forms=get_option("oap_utm_user_forms", "");
 		if(!empty($oap_utm_user_forms))
 			$oap_utm_user_forms=unserialize($oap_utm_user_forms);
@@ -219,6 +253,7 @@ class OAPUTM
 		$oap_utm_api_version=get_option('oap_utm_api_version', "");
 		$oap_utm_app_id=get_option('oap_utm_app_id', "");
 		$oap_utm_api_key=get_option('oap_utm_api_key', "");
+		$oap_utm_license_key=get_option('oap_utm_license_key', "");
 		if($oap_utm_app_id!="" && $oap_utm_api_key!=""){
 			?>
             <h3>OAP Forms</h3>
@@ -272,7 +307,9 @@ class OAPUTM
 												$start2+=6;
 												if(($end2=strpos($temp, '"', $start2))!==false){
 													$field_name=strip_tags(substr($temp, $start2, $end2-$start2));
-													$form_fields[]=array($field_title, $field_name);
+													if($field_name!="uid"){
+														$form_fields[]=array($field_title, $field_name);
+													}
 												}
 											}
 										}
@@ -385,7 +422,8 @@ class OAPUTM
                                                         ?>
                                                         <label for="utm_field_<?php echo $k1."_".$v["id"]?>"><?php echo $v1?></label>
                                                         <select name="utm_field_<?php echo $k1."_".$v["id"]?>">
-                                                            <?php
+                                                            <option value=""<?php if($pos && $oap_utm_user_forms[$pos][$k1]=="") echo ' selected="selected"';?>>None</option>
+															<?php
                                                             foreach($v["form_fields"] as $k2=>$v2){
                                                                 ?>
                                                                 <option value="<?php echo $v2[1]?>"<?php if($pos && $oap_utm_user_forms[$pos][$k1]==$v2[1]) echo ' selected="selected"';?>><?php echo $v2[1].""; ?></option>
@@ -448,9 +486,10 @@ class OAPUTM
 				<?php
 				if(isset($oap_utm_user_forms[$v])){
 					foreach($oap_utm_user_forms[$v] as $k1=>$v1){
-						?>
-						oap_utm_forms_fields[<?php echo $i?>].<?php echo $k1?>='<?php echo $v1?>';
+						if($v1!="uid"){?>
+							oap_utm_forms_fields[<?php echo $i?>].<?php echo $k1?>='<?php echo $v1?>';
 						<?php
+						}
 					}
 				}
 				$i++;
@@ -483,45 +522,56 @@ class OAPUTM
 					}
 				}
 			}
+			var $user_ip_address_response;
 			function get_variable_value($var){
-				if($var=="referring_website"){
-					check_cookie=get_cookie("website_visited");
-					if(check_cookie!=null && check_cookie!=""){
-						$val=get_cookie("referring_website");
-					}
-					else{
-						$val=document.referrer;
-					}
+				if($var=="user_ip_address"){
+					$val="";
+					jQuery.get("<?php echo plugins_url('capture-url-variables-for-ontraport.php', __FILE__)?>", {request: "get_ip"}, function(response) {
+						$user_ip_address_response=response;
+						return $user_ip_address_response;
+					});
 				}
 				else{
-					if(query_variable($var)==""){
-						$val=get_cookie($var);
+					if($var=="referring_website"){
+						check_cookie=get_cookie("website_visited");
+						if(check_cookie!=null && check_cookie!=""){
+							$val=get_cookie("referring_website");
+						}
+						else{
+							$val=document.referrer;
+						}
 					}
 					else{
-						$val=query_variable($var);
+						if(query_variable($var)==""){
+							$val=get_cookie($var);
+						}
+						else{
+							$val=query_variable($var);
+						}
+						if($val=="undefined")
+							$val="";
 					}
-					if($val=="undefined")
-						$val="";
+					set_cookie($var, $val);
+					return $val;
 				}
-				set_cookie($var, $val);
-				return $val;
 			}
+			$utm_fields=new Object();
+			jQuery(document).ready(function(){
+				<?php
+				foreach($this->utm_fields as $k=>$v){
+					?>
+					$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>");
+					<?php
+				}
+				foreach($this->utm_extra_fields as $k=>$v){
+					?>
+					$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>");
+					<?php
+				}
+				?>
+			});
 			jQuery(window).load(function(){
 				setTimeout(function(){
-					check_cookie=get_cookie("website_visited");
-					$utm_fields=new Object();
-					<?php
-					foreach($this->utm_fields as $k=>$v){
-						?>
-						$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>", check_cookie);
-						<?php
-					}
-					foreach($this->utm_extra_fields as $k=>$v){
-						?>
-						$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>", check_cookie);
-						<?php
-					}
-					?>
 					jQuery("form").each(function(){
 						$this=jQuery(this);
 						if($this.find("input[name=uid]").length>0){
@@ -539,7 +589,12 @@ class OAPUTM
 								?>
 								if(typeof(oap_utm_forms_fields[$index])!='undefined'){
 									for (key in oap_utm_forms_fields[$index]) {
-										$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($utm_fields[key]);
+										if(key=="user_ip_address"){
+											$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($user_ip_address_response);
+										}
+										else{
+											$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($utm_fields[key]);
+										}
 									}
 								}
 							}

@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.1.0
- * Stable tag: 1.1.0
+ * Version: 1.1.1
+ * Stable tag: 1.1.1
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -81,10 +81,12 @@ class OAPUTM
 		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
-		add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_style') );
+		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
 		add_action('wp_head', array($this, 'oap_utm_custom_js'));
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
+		$plugin = plugin_basename(__FILE__);
+		add_filter("plugin_action_links_$plugin", array( $this, 'oap_utm_settings_link') );
     }
 	
 	public function show_license_info(){
@@ -107,7 +109,12 @@ class OAPUTM
 		wp_enqueue_script( 'oap_utm_chosen', plugins_url('js/chosen/chosen.jquery.js', __FILE__), false, '1.0.0' );
 		wp_enqueue_script( 'oap_utm_prism', plugins_url('js/js.js', __FILE__), false, '1.0.0' );
 	}
-
+	
+	public function oap_utm_settings_link($links) { 
+	  	$settings_link = '<a href="options-general.php?page=oap-utm-admin">Settings</a>'; 
+	  	array_unshift($links, $settings_link); 
+	  	return $links; 
+	}
     /**
      * Add options page
      */
@@ -352,8 +359,8 @@ class OAPUTM
 							}
 						}
 					}
-					//if($cnt>1)
-						//break;
+					if($cnt>1)
+						break;
 					$response=substr($response, $start+10);
 				}
 				?>

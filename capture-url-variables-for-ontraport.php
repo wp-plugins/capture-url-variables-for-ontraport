@@ -3,7 +3,7 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.1.1
+ * Version: 1.1.3
  * Stable tag: 1.1.3
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/

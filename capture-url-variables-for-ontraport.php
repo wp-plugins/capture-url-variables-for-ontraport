@@ -4,7 +4,7 @@
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
  * Version: 1.1.1
- * Stable tag: 1.1.1
+ * Stable tag: 1.1.3
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */

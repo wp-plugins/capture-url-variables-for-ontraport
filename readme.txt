@@ -59,6 +59,12 @@ Nothing yet.
 
 == Changelog ==
 
+= 1.1.4 =
+
+* Fixed issue with jQuery and Cookies
+
+== Changelog ==
+
 = 1.1.3 =
 
 * Fixed issue with OP2 not loading

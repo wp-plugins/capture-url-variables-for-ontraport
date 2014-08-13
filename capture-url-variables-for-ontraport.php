@@ -83,12 +83,16 @@ class OAPUTM
 		$this->utm_extra_fields=$utm_extra_fields;
 		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
-		wp_enqueue_script('jquery');
-		add_action('wp_head', array($this, 'oap_utm_custom_js'));
+		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
+		add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array( $this, 'oap_utm_settings_link') );
     }
+	
+	public function oap_utm_enqueue_js(){
+		wp_enqueue_script('jquery');
+	}
 	
 	public function show_license_info(){
 		$license_key=get_option('oap_utm_license_key', "");

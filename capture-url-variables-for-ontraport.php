@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.1.4
- * Stable tag: 1.1.4
+ * Version: 1.1.5
+ * Stable tag: 1.1.5
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -64,6 +64,7 @@ if(isset($_GET["request"]) && $_GET["request"]=="get_ip"){
     echo ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
 	die;
 }
+defined('ABSPATH') or die("No script kiddies please!");
 class OAPUTM
 {
     /**
@@ -235,7 +236,7 @@ class OAPUTM
 					curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 					$response = json_decode(curl_exec($session));
 					curl_close($session);
-					if(isset($response->status) && $response->status=="success" || 1){
+					if(isset($response->status) && $response->status=="success"){
 						if(isset($response->message))
 							$_SESSION["oap_response"]=$response->message;
 						$oap_utm_api_version=get_option('oap_utm_api_version', "");

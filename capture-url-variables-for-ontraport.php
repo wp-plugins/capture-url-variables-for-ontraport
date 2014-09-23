@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.1.3
- * Stable tag: 1.1.3
+ * Version: 1.2.0
+ * Stable tag: 1.2.0
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -64,6 +64,7 @@ if(isset($_GET["request"]) && $_GET["request"]=="get_ip"){
     echo ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
 	die;
 }
+defined('ABSPATH') or die("No script kiddies please!");
 class OAPUTM
 {
     /**
@@ -83,11 +84,43 @@ class OAPUTM
 		$this->utm_extra_fields=$utm_extra_fields;
 		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
-		add_action('wp_head', array($this, 'oap_utm_custom_js'));
+		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
+		add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array( $this, 'oap_utm_settings_link') );
+		add_shortcode('cuv', array($this, 'shortcode_cuv'));
     }
+	public function shortcode_cuv($atts){
+		$license_key=get_option('oap_utm_license_key', "");
+		if(!empty($license_key)){
+			$request= "verify";
+			$postargs = "domain=".urlencode($_SERVER['HTTP_HOST'])."&license_key=".urlencode($license_key)."&request=".urlencode($request);
+			$session = curl_init($this->url);
+			curl_setopt ($session, CURLOPT_POST, true);
+			curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+			curl_setopt($session, CURLOPT_HEADER, false);
+			curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+			$response = json_decode(curl_exec($session));
+			curl_close($session);
+			if(isset($response->status) && $response->status=="success"){
+				if(isset($atts["field"])){
+					$field=$atts["field"];
+					if(isset($_COOKIE[$field])){
+						$value=$_COOKIE[$field];
+						if($value=="undefined")
+							$value="";
+						return $value;
+					}
+					else
+						return "";
+				}
+			}
+		}
+	}
+	public function oap_utm_enqueue_js(){
+		wp_enqueue_script('jquery');
+	}
 	
 	public function show_license_info(){
 		$license_key=get_option('oap_utm_license_key', "");
@@ -230,7 +263,7 @@ class OAPUTM
 					curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 					$response = json_decode(curl_exec($session));
 					curl_close($session);
-					if(isset($response->status) && $response->status=="success" || 1){
+					if(isset($response->status) && $response->status=="success"){
 						if(isset($response->message))
 							$_SESSION["oap_response"]=$response->message;
 						$oap_utm_api_version=get_option('oap_utm_api_version', "");
@@ -359,8 +392,8 @@ class OAPUTM
 							}
 						}
 					}
-					if($cnt>1)
-						break;
+					//if($cnt>1)
+						//break;
 					$response=substr($response, $start+10);
 				}
 				?>
@@ -408,32 +441,6 @@ class OAPUTM
                             </select>
                         </td>
                     </tr>
-                    <?php
-                    /*if($oap_utm_api_version=="api.moon-ray.com"){
-						?>
-                        <tr>
-                            <th scope="row">Assign Fields<br /><small>Assign all fields which will be used in form.</small></th>
-                            <td>
-                                <table class="form-table">
-									<?php
-                                    foreach($this->utm_fields as $k=>$v){
-                                        if(in_array($k, $oap_utm_fields)){
-											?>
-                                        	<tr>
-                                            	<td><label for=""><?php echo $v?></label></td>
-                                                <td><input type="text" name="utm_fields_custom_<?php echo $k?>" value="<?php echo get_option("utm_fields_custom_".$k, "");?>" /></td>
-                                            </tr>
-                                        	<?php
-                                        	$cnt++;
-										}
-                                    }
-                                    ?>
-                              	</table>
-                            </td>
-                        </tr>
-						<?php
-					}*/
-					?>
                     <tr valign="top">
                         <th scope="row">Select Extra Fields<br /><small>Select extra fields which need to be selected and assigned for each selected form.</small></th>
                         <td>
@@ -617,12 +624,14 @@ class OAPUTM
 				else{
 					if($var=="referring_website"){
 						check_cookie=get_cookie("website_visited");
-						if(check_cookie!=null && check_cookie!=""){
+						if(typeof(check_cookie)!='undefined'){
 							$val=get_cookie("referring_website");
 						}
 						else{
 							$val=document.referrer;
 						}
+						if($val=="undefined")
+							$val="";
 					}
 					else{
 						if(query_variable($var)==""){
@@ -638,8 +647,8 @@ class OAPUTM
 					return $val;
 				}
 			}
-			$utm_fields=new Object();
-			jQuery(document).ready(function(){
+			var $utm_fields=new Object();
+			function utm_fields_initialize(){
 				<?php
 				foreach($this->utm_fields as $k=>$v){
 					?>
@@ -652,9 +661,11 @@ class OAPUTM
 					<?php
 				}
 				?>
-			});
+			}
 			jQuery(window).load(function(){
+				utm_fields_initialize();
 				setTimeout(function(){
+					console.log($utm_fields);
 					jQuery("form").each(function(){
 						$this=jQuery(this);
 						if($this.find("input[name=uid]").length>0){
@@ -663,15 +674,7 @@ class OAPUTM
 								<?php
 								foreach($oap_utm_fields as $k=>$v){
 									$oap_utm_api_version=get_option('oap_utm_api_version', "");
-									if($oap_utm_api_version=="api.moon-ray.com"){
-										/*$assigned_field=get_option("utm_fields_custom_".$v, "");
-										if(!empty($assigned_field)){
-											?>
-											$this.find("input[name=<?php echo $assigned_field?>]").val($utm_fields.<?php echo $v?>);
-											<?php
-										}*/
-									}
-									else{
+									if($oap_utm_api_version!="api.moon-ray.com"){
 										?>
 										if($this.find("input[name=<?php echo $v?>]").length==0){
 											$this.prepend('<input type="hidden" name="<?php echo $v?>" id="<?php echo $v?>" value="" />');

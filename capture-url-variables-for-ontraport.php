@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.1.5
- * Stable tag: 1.1.5
+ * Version: 1.2.0
+ * Stable tag: 1.2.0
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -89,8 +89,35 @@ class OAPUTM
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array( $this, 'oap_utm_settings_link') );
+		add_shortcode('cuv', array($this, 'shortcode_cuv'));
     }
-	
+	public function shortcode_cuv($atts){
+		$license_key=get_option('oap_utm_license_key', "");
+		if(!empty($license_key)){
+			$request= "verify";
+			$postargs = "domain=".urlencode($_SERVER['HTTP_HOST'])."&license_key=".urlencode($license_key)."&request=".urlencode($request);
+			$session = curl_init($this->url);
+			curl_setopt ($session, CURLOPT_POST, true);
+			curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+			curl_setopt($session, CURLOPT_HEADER, false);
+			curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+			$response = json_decode(curl_exec($session));
+			curl_close($session);
+			if(isset($response->status) && $response->status=="success"){
+				if(isset($atts["field"])){
+					$field=$atts["field"];
+					if(isset($_COOKIE[$field])){
+						$value=$_COOKIE[$field];
+						if($value=="undefined")
+							$value="";
+						return $value;
+					}
+					else
+						return "";
+				}
+			}
+		}
+	}
 	public function oap_utm_enqueue_js(){
 		wp_enqueue_script('jquery');
 	}
@@ -597,12 +624,14 @@ class OAPUTM
 				else{
 					if($var=="referring_website"){
 						check_cookie=get_cookie("website_visited");
-						if(check_cookie!=null && check_cookie!=""){
+						if(typeof(check_cookie)!='undefined'){
 							$val=get_cookie("referring_website");
 						}
 						else{
 							$val=document.referrer;
 						}
+						if($val=="undefined")
+							$val="";
 					}
 					else{
 						if(query_variable($var)==""){

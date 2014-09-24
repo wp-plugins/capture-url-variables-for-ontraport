@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 4.0.0
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -61,10 +61,18 @@ Nothing yet.
 
 == Changelog ==
 
+= 1.2.1 =
+
+* Fixed short code issue with variables not showing up on form thank you page based on var lookup
+
 = 1.2.0 =
 
 * Fixed issue referral_page not being collected
 * Added the ability to pass variables to any page on the domain via a short code 
+
+= 1.1.5 =
+
+* Fixed another issue with OP2 not loading
 
 = 1.1.3 =
 

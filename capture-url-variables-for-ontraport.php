@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.0
- * Stable tag: 1.2.0
+ * Version: 1.2.2
+ * Stable tag: 1.2.2
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -34,36 +34,6 @@ $utm_extra_fields=array(
 	"var4"=>"var4",
 	"var5"=>"var5",
 );
-if(isset($_GET["request"]) && $_GET["request"]=="get_ip"){
-	$ip = FALSE;
-    if (!empty($_SERVER["HTTP_CLIENT_IP"])) {
-        $ip = $_SERVER["HTTP_CLIENT_IP"];
-    }
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ips = explode (", ", $_SERVER['HTTP_X_FORWARDED_FOR']);
-        if ($ip) {
-            array_unshift($ips, $ip);
-            $ip = FALSE;
-        }
-        for ($i = 0; $i < count($ips); $i++) {
-            if (!eregi ("^(10|172\.16|192\.168)\.", $ips[$i])) {
-                if (version_compare(phpversion(), "5.0.0", ">=")) {
-                    if (ip2long($ips[$i]) != false) {
-                        $ip = $ips[$i];
-                        break;
-                    }
-                } else {
-                    if (ip2long($ips[$i]) != -1) {
-                        $ip = $ips[$i];
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    echo ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
-	die;
-}
 defined('ABSPATH') or die("No script kiddies please!");
 class OAPUTM
 {
@@ -71,7 +41,7 @@ class OAPUTM
      * Holds the values to be used in the fields callbacks
      */
     private $options;
-	private $utm_fields;
+	private $utm_fields, $utm_fields_values=array();
 	private $url="http://app.itmooti.com/wp-plugins/oap-utm/api.php";
     /**
      * Start up
@@ -85,6 +55,7 @@ class OAPUTM
 		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
 		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
+		add_action( 'send_headers', array($this, 'oap_utm_custom_cookies'));
 		add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
 		$plugin = plugin_basename(__FILE__);
@@ -106,14 +77,18 @@ class OAPUTM
 			if(isset($response->status) && $response->status=="success"){
 				if(isset($atts["field"])){
 					$field=$atts["field"];
-					if(isset($_COOKIE[$field])){
-						$value=$_COOKIE[$field];
+					if(isset($_GET[$field])){
+						return $_GET[$field];
+					}
+					else if(isset($_COOKIE["cuv_".$field])){
+						$value=$_COOKIE["cuv_".$field];
 						if($value=="undefined")
 							$value="";
 						return $value;
 					}
-					else
+					else{
 						return "";
+					}
 				}
 			}
 		}
@@ -546,7 +521,70 @@ class OAPUTM
 			}
 		}
 	}
+	public function get_real_ip(){
+		$ip = FALSE;
+		if (!empty($_SERVER["HTTP_CLIENT_IP"])) {
+			$ip = $_SERVER["HTTP_CLIENT_IP"];
+		}
+		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$ips = explode (", ", $_SERVER['HTTP_X_FORWARDED_FOR']);
+			if ($ip) {
+				array_unshift($ips, $ip);
+				$ip = FALSE;
+			}
+			for ($i = 0; $i < count($ips); $i++) {
+				if (!eregi ("^(10|172\.16|192\.168)\.", $ips[$i])) {
+					if (version_compare(phpversion(), "5.0.0", ">=")) {
+						if (ip2long($ips[$i]) != false) {
+							$ip = $ips[$i];
+							break;
+						}
+					} else {
+						if (ip2long($ips[$i]) != -1) {
+							$ip = $ips[$i];
+							break;
+						}
+					}
+				}
+			}
+		}
+		return ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
+	}
 	
+	public function get_variable_value($var){
+		if($var=="user_ip_address"){
+			return $this->get_real_ip();
+		}
+		else if($var=="referral_page"){
+			if(isset($_COOKIE["cuv_referral_page"]))
+				return $_COOKIE["cuv_referral_page"];
+			else{
+				$val=$_SERVER['HTTP_REFERER'];
+				setcookie("cuv_referral_page", $val, strtotime('+1 days'), "/");
+				return $val;
+			}
+		}
+		else{
+			if(isset($_GET[$var])){
+				$val=$_GET[$var];
+				setcookie("cuv_".$var, $val, strtotime('+1 days'), "/");
+				return $val;
+			}
+			else if(isset($_COOKIE["cuv_".$var])){
+				return $_COOKIE["cuv_".$var];
+			}
+			else
+				return "";
+		}
+	}
+	public function oap_utm_custom_cookies(){
+		foreach($this->utm_fields as $k=>$v){
+			$this->utm_fields_values[$k]=$this->get_variable_value($k);
+		}
+		foreach($this->utm_extra_fields as $k=>$v){
+			$this->utm_fields_values[$k]=$this->get_variable_value($k);
+		}
+	}
 	public function oap_utm_custom_js() {
 		$oap_utm_form_ids=get_option("oap_utm_form_ids", "");
 		if(!empty($oap_utm_form_ids))
@@ -585,79 +623,17 @@ class OAPUTM
 				$i++;
 			}
 			?>
-			function query_variable(name){
-				name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-				var regexS = "[\\?&]"+name+"=([^&#]*)";
-				var regex = new RegExp( regexS );
-				var results = regex.exec( decodeURIComponent(window.location.href) );
-				if( results == null )
-					return "";
-				else
-					return results[1];
-			}
-			function set_cookie(c_name,value,exdays){
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate() + exdays);
-				var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-				document.cookie=c_name + "=" + c_value;
-			}
-			function get_cookie(c_name){
-				var i,x,y,ARRcookies=document.cookie.split(";");
-				for (i=0;i<ARRcookies.length;i++){
-					x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-					y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-					x=x.replace(/^\s+|\s+$/g,"");
-					if(x==c_name){
-						return unescape(y);
-					}
-				}
-			}
-			var $user_ip_address_response;
-			function get_variable_value($var){
-				if($var=="user_ip_address"){
-					$val="";
-					jQuery.get("<?php echo plugins_url('capture-url-variables-for-ontraport.php', __FILE__)?>", {request: "get_ip"}, function(response) {
-						$user_ip_address_response=response;
-						return $user_ip_address_response;
-					});
-				}
-				else{
-					if($var=="referring_website"){
-						check_cookie=get_cookie("website_visited");
-						if(typeof(check_cookie)!='undefined'){
-							$val=get_cookie("referring_website");
-						}
-						else{
-							$val=document.referrer;
-						}
-						if($val=="undefined")
-							$val="";
-					}
-					else{
-						if(query_variable($var)==""){
-							$val=get_cookie($var);
-						}
-						else{
-							$val=query_variable($var);
-						}
-						if($val=="undefined")
-							$val="";
-					}
-					set_cookie($var, $val);
-					return $val;
-				}
-			}
 			var $utm_fields=new Object();
 			function utm_fields_initialize(){
 				<?php
 				foreach($this->utm_fields as $k=>$v){
 					?>
-					$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>");
+					$utm_fields.<?php echo $k?>='<?php echo $this->utm_fields_values[$k]?>';
 					<?php
 				}
 				foreach($this->utm_extra_fields as $k=>$v){
 					?>
-					$utm_fields.<?php echo $k?>=get_variable_value("<?php echo $k?>");
+					$utm_fields.<?php echo $k?>='<?php echo $this->utm_fields_values[$k]?>';
 					<?php
 				}
 				?>
@@ -665,7 +641,6 @@ class OAPUTM
 			jQuery(window).load(function(){
 				utm_fields_initialize();
 				setTimeout(function(){
-					console.log($utm_fields);
 					jQuery("form").each(function(){
 						$this=jQuery(this);
 						if($this.find("input[name=uid]").length>0){

@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.2
- * Stable tag: 1.2.2
+ * Version: 1.2.3
+ * Stable tag: 1.2.3
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -26,7 +26,8 @@ $utm_extra_fields=array(
 	"fname"=>"fname",
 	"lname"=>"lname",
 	"email"=>"Email",
-	"referral_page"=>"Referral Page",
+	"referral_page"=>"Referral Page URL",
+	"landing_page"=>"Landing Page URL",
 	"user_ip_address"=>"IP Address",
 	"var1"=>"var1",
 	"var2"=>"var2",
@@ -130,12 +131,45 @@ class OAPUTM
         // This page will be under "Settings"
         add_options_page(
             'Settings Admin', 
-            'OAP UTM Settings', 
+            'CUV Settings', 
             'manage_options', 
             'oap-utm-admin', 
             array( $this, 'create_admin_page' )
         );
+		add_options_page(
+            'Settings Admin', 
+            'CUV Shortcodes', 
+            'manage_options', 
+            'oap-utm-cuv', 
+            array( $this, 'create_cuv_page' )
+        );
     }
+	
+	public function create_cuv_page(){
+		?>
+        <div class="wrap">
+            <?php screen_icon(); ?>
+            <h2>CUV Shortcode</h2>
+            <p>CUV shortcode is used to display URL fields in the page and posts. Below is the syntax of the Shortcode.</p>
+            <p><strong>[cuv field="<cite>Field Name</cite>"]</strong></p>
+            <p>Where field name could be any of the follwoing values (In Bold).</p>
+            <ul style="list-style:circle; padding-left:20px;">
+            	<?php
+                foreach($this->utm_fields as $k=>$v){
+					?>
+					<li><strong><?php echo $k?></strong> - <cite><?php echo $v?></cite></li>
+					<?php
+				}
+				foreach($this->utm_extra_fields as $k=>$v){
+					?>
+					<li><strong><?php echo $k?></strong> - <cite><?php echo $v?></cite></li>
+					<?php
+				}
+				?>
+            </ul>
+       	</div>
+        <?php
+	}
     /**
      * Options page callback
      */
@@ -216,7 +250,7 @@ class OAPUTM
 		?>
         <div class="wrap">
             <?php screen_icon(); ?>
-            <h2>OAP UTM Settings</h2>           
+            <h2>CUV Settings</h2>           
             <form method="post">
            	  	<h3>Plugin Credentials</h3>
                 Provide Plugin Credentials below:
@@ -559,9 +593,28 @@ class OAPUTM
 			if(isset($_COOKIE["cuv_referral_page"]))
 				return $_COOKIE["cuv_referral_page"];
 			else{
-				$val=$_SERVER['HTTP_REFERER'];
+				if(isset($_SERVER['HTTP_REFERER']))
+					$val=$_SERVER['HTTP_REFERER'];
+				else
+					$val="";
 				setcookie("cuv_referral_page", $val, strtotime('+1 days'), "/");
 				return $val;
+			}
+		}
+		else if($var=="landing_page"){
+			if(isset($_COOKIE["cuv_landing_page"]))
+				return $_COOKIE["cuv_landing_page"];
+			else{
+				$pageURL = 'http';
+				if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
+					$pageURL .= "://";
+				if (isset($_SERVER["SERVER_PORT"]) && $_SERVER["SERVER_PORT"] != "80") {
+				 	$pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+				} else {
+				 	$pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+				}
+				setcookie("cuv_landing_page", $pageURL, strtotime('+1 days'), "/");
+				return $pageURL;
 			}
 		}
 		else{

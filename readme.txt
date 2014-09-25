@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 4.0.0
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,11 @@ https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-P
 Nothing yet.
 
 == Changelog ==
+
+= 1.2.3 =
+
+* Added the ability to collect the landing page from where the form is submitted
+* Added the list of shortcodes in the settings area ‘CUV Shortcodes’
 
 = 1.2.2 =
 

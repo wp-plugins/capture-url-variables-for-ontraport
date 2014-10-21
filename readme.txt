@@ -61,6 +61,10 @@ Nothing yet.
 
 == Changelog ==
 
+= 1.2.4 =
+
+* Fixed Timeout Issue by decreasing the number of form load
+
 = 1.2.3 =
 
 * Added the ability to collect the landing page from where the form is submitted

@@ -3,8 +3,8 @@
  * Plugin Name: OAP UTM WP Plugin
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.3
- * Stable tag: 1.2.3
+ * Version: 1.2.4
+ * Stable tag: 1.2.4
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -174,7 +174,16 @@ class OAPUTM
      * Options page callback
      */
     public function create_admin_page(){
-        if(isset($_POST["oap_utm_license_key"]))
+        if(isset($_POST["oap_utm_clear_cache"])){
+			global $wpdb;
+			$wpdb->query( 
+				$wpdb->prepare( 
+					"DELETE FROM $wpdb->options
+					 WHERE option_name like 'oap_utm_form_id_%'"					
+				)
+			);
+		}
+		if(isset($_POST["oap_utm_license_key"]))
 			add_option("oap_utm_license_key", $_POST["oap_utm_license_key"]) or update_option("oap_utm_license_key", $_POST["oap_utm_license_key"]);
 		if(isset($_POST["oap_utm_api_version"]))
 			add_option("oap_utm_api_version", $_POST["oap_utm_api_version"]) or update_option("oap_utm_api_version", $_POST["oap_utm_api_version"]);
@@ -312,6 +321,7 @@ class OAPUTM
 				}
                 submit_button(); 
             ?>
+            <input type="submit" name="oap_utm_clear_cache" class="button button-primary" value="Clear Form Cache" />
             </form>
         </div>
         <?php
@@ -352,53 +362,65 @@ class OAPUTM
 			if($response!="" && strpos($response, "<error>Invalid AppId / Key Combination</error>")===false){
 				$forms=array();
 				$cnt=0;
-				while(($start=strpos($response, '<form'))!==false){
-					$cnt++;
+				while(($start=strpos($response, '<form'))!==false && $cnt<10){
 					if(($end=strpos($response, '</form>', $start))!==false){
 						$form=substr($response, $start, $end-$start+7);
 						$id=explode("id='", $form);
 						$id=explode("'", $id[1]);
 						$id=$id[0];
-						$reqType= "fetch";
-						$postargs = "appid=".$appid."&key=".$key."&return_id=1&id=".$id."&reqType=".$reqType;
-						$request = "http://".$ver."/fdata.php";
-						
-						$session = curl_init($request);
-						curl_setopt ($session, CURLOPT_POST, true);
-						curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-						curl_setopt($session, CURLOPT_HEADER, false);
-						curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-						$str = curl_exec($session);
-						$form_id="";
-						if($str!=""){
-							if(($start1=strpos($str, 'name="uid"'))!==false && ($start1=strpos($str, 'value="', $start1))!==false){
-								$start1+=strlen('value="');
-								if(($end1=strpos($str, '"', $start1))!==false){
-									$form_id=trim(substr($str, $start1, $end1-$start1));
-									$form_fields=array();
-									while(($start1=strpos($str, '<input'))!==false){
-										if(($end1=strpos($str, '>', $start1))!==false){
-											$temp=substr($str, $start1, $end1-$start1+6);
-											$field_name=$field_title="";
-											if(($start2=strpos($temp, 'name="'))!==false){
-												$start2+=6;
-												if(($end2=strpos($temp, '"', $start2))!==false){
-													$field_name=strip_tags(substr($temp, $start2, $end2-$start2));
-													if($field_name!="uid"){
-														$form_fields[]=array($field_title, $field_name);
+						$form_details=get_option('oap_utm_form_id_'.$id, "");
+						if($form_details==""){
+							$cnt++;
+							$reqType= "fetch";
+							$postargs = "appid=".$appid."&key=".$key."&return_id=1&id=".$id."&reqType=".$reqType;
+							$request = "http://".$ver."/fdata.php";
+							
+							$session = curl_init($request);
+							curl_setopt ($session, CURLOPT_POST, true);
+							curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+							curl_setopt($session, CURLOPT_HEADER, false);
+							curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+							$str = curl_exec($session);
+							$form_id="";
+							if($str!=""){
+								if(($start1=strpos($str, 'name="uid"'))!==false && ($start1=strpos($str, 'value="', $start1))!==false){
+									$start1+=strlen('value="');
+									if(($end1=strpos($str, '"', $start1))!==false){
+										$form_id=trim(substr($str, $start1, $end1-$start1));
+										$form_fields=array();
+										while(($start1=strpos($str, '<input'))!==false){
+											if(($end1=strpos($str, '>', $start1))!==false){
+												$temp=substr($str, $start1, $end1-$start1+6);
+												$field_name=$field_title="";
+												if(($start2=strpos($temp, 'name="'))!==false){
+													$start2+=6;
+													if(($end2=strpos($temp, '"', $start2))!==false){
+														$field_name=strip_tags(substr($temp, $start2, $end2-$start2));
+														if($field_name!="uid"){
+															$form_fields[]=array($field_title, $field_name);
+														}
 													}
 												}
 											}
+											$str=substr($str, $start1+10);
 										}
-										$str=substr($str, $start1+10);
+										$forms[]=array(
+											"id" => $form_id,
+											"title" => strip_tags($form),
+											"form_fields" => $form_fields
+
+										);
+										add_option('oap_utm_form_id_'.$id, serialize(array(
+											"id" => $form_id,
+											"title" => strip_tags($form),
+											"form_fields" => $form_fields
+										)));
 									}
-									$forms[]=array(
-										"id" => $form_id,
-										"title" => strip_tags($form),
-										"form_fields" => $form_fields
-									);
 								}
 							}
+						}
+						else{
+							$forms[]=unserialize($form_details);
 						}
 					}
 					//if($cnt>1)
@@ -428,6 +450,7 @@ class OAPUTM
 							}
 							?>
                             </select>
+                            <br /><small>On the first load of the CUV plugins settings page you will only see 10 forms. We limit it to 10 so as not to have the plugin timeout as OP is serving the form API. If you have more than 10 forms, these extra forms will load in to the database of the plugin on further loads of this settings page, 10 at a time.<br /><br />If you update any of your forms you will need to hit the clear cache button to reload the forms.</small>
                         </td>
                     </tr>
                     <tr valign="top">
@@ -560,6 +583,7 @@ class OAPUTM
 		if (!empty($_SERVER["HTTP_CLIENT_IP"])) {
 			$ip = $_SERVER["HTTP_CLIENT_IP"];
 		}
+
 		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 			$ips = explode (", ", $_SERVER['HTTP_X_FORWARDED_FOR']);
 			if ($ip) {

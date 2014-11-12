@@ -1,4 +1,4 @@
-=== OAP UTM Plugin ===
+﻿=== Capture URL Variables for Ontraport ===
 Contributors: itmooti
 Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
@@ -22,7 +22,7 @@ This works for both Office Autopilot 2.4 and Ontraport 3.0
 
 == Installation ==
 
-1. Upload `oap-utm` to the `/wp-content/plugins/` directory
+1. Upload `cature-url-variables-for-ontraport` to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Frequently Asked Questions ==
@@ -61,12 +61,38 @@ Nothing yet.
 
 == Changelog ==
 
+<<<<<<< .mine
+= 1.2.5 =
+=======
 = 1.2.4 =
+>>>>>>> .r1024391
 
+<<<<<<< .mine
+* Fixed Session Error
+=======
 * Fixed Timeout Issue by decreasing the number of form load
+>>>>>>> .r1024391
 
+<<<<<<< .mine
+= 1.2.4 =
+=======
 = 1.2.3 =
+>>>>>>> .r1024391
 
+<<<<<<< .mine
+* Fixed Timeout Issue by decreasing the number of form load
+=======
+* Added the ability to collect the landing page from where the form is submitted
+* Added the list of shortcodes in the settings area ‘CUV Shortcodes’
+>>>>>>> .r1024391
+
+<<<<<<< .mine
+= 1.2.3 =
+=======
+= 1.2.2 =
+>>>>>>> .r1024391
+
+<<<<<<< .mine
 * Added the ability to collect the landing page from where the form is submitted
 * Added the list of shortcodes in the settings area ‘CUV Shortcodes’
 
@@ -87,6 +113,23 @@ Nothing yet.
 
 * Fixed another issue with OP2 not loading
 
+=======
+* Fixed ability to pass name fields to any page with short codes via cookie
+
+= 1.2.1 =
+
+* Fixed short code issue with variables not showing up on form thank you page based on var lookup
+
+= 1.2.0 =
+
+* Fixed issue referral_page not being collected
+* Added the ability to pass variables to any page on the domain via a short code 
+
+= 1.1.5 =
+
+* Fixed another issue with OP2 not loading
+
+>>>>>>> .r1024391
 = 1.1.3 =
 
 * Fixed issue with OP2 not loading

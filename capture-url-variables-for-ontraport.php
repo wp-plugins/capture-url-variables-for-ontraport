@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: OAP UTM WP Plugin
+ * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.4
- * Stable tag: 1.2.4
+ * Version: 1.2.5
+ * Stable tag: 1.2.5
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -49,7 +49,7 @@ class OAPUTM
      */
     public function __construct($utm_fields, $utm_extra_fields){
 		if (!session_id()) {
-			session_start();
+			@session_start();
 		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
@@ -105,9 +105,10 @@ class OAPUTM
         		<p>OAP UTM WP Plugin: How do I get License Key?<br />Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license/">http://app.itmooti.com/wp-plugins/oap-utm/license/</a> to get a License Key .</p>
 	    	</div>';
 		}
-		if(isset($_SESSION["oap_response"]) && !empty($_SESSION["oap_response"])){
+		$resonse=file_get_contents(plugin_dir_path( __FILE__ )."response.txt");
+		if($resonse!=""){
 			echo '<div class="error">
-        		<p>OAP UTM WP Plugin: '.$_SESSION["oap_response"].'</p>
+        		<p>OAP UTM WP Plugin: '.$response.'</p>
 	    	</div>';
 		}
 	}
@@ -282,8 +283,12 @@ class OAPUTM
 					$response = json_decode(curl_exec($session));
 					curl_close($session);
 					if(isset($response->status) && $response->status=="success"){
-						if(isset($response->message))
-							$_SESSION["oap_response"]=$response->message;
+						if(isset($response->message)){
+							file_put_contents(plugin_dir_path( __FILE__ )."response.txt", $response->message);
+						}
+						else{
+							file_put_contents(plugin_dir_path( __FILE__ )."response.txt", "");
+						}
 						$oap_utm_api_version=get_option('oap_utm_api_version', "");
 						$oap_utm_app_id=get_option('oap_utm_app_id', "");
 						$oap_utm_api_key=get_option('oap_utm_api_key', "");
@@ -703,6 +708,7 @@ class OAPUTM
 			var $utm_fields=new Object();
 			function utm_fields_initialize(){
 				<?php
+
 				foreach($this->utm_fields as $k=>$v){
 					?>
 					$utm_fields.<?php echo $k?>='<?php echo $this->utm_fields_values[$k]?>';

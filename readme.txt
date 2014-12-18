@@ -3,8 +3,8 @@ Contributors: itmooti
 Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
-Tested up to: 4.0.0
-Stable tag: 1.2.4
+Tested up to: 4.0.1
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 

@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.5
- * Stable tag: 1.2.5
+ * Version: 1.2.6
+ * Stable tag: 1.2.6
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -180,8 +180,8 @@ class OAPUTM
 			$wpdb->query( 
 				$wpdb->prepare( 
 					"DELETE FROM $wpdb->options
-					 WHERE option_name like 'oap_utm_form_id_%'"					
-				)
+					 WHERE option_name like %s"					
+				, 'oap_utm_form_id_%')
 			);
 		}
 		if(isset($_POST["oap_utm_license_key"]))

@@ -4,7 +4,7 @@ Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
 Requires at least: 3.0.1
 Tested up to: 4.1
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,10 @@ https://itmooti.zendesk.com/hc/en-us/articles/202715690-How-to-use-the-OAP-UTM-P
 Nothing yet.
 
 == Changelog ==
+
+= 1.2.6 =
+
+* Fixed Clear Form Cache Function's query error
 
 <<<<<<< .mine
 = 1.2.5 =

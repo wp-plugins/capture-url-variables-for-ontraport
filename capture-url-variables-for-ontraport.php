@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.6
- * Stable tag: 1.2.6
+ * Version: 1.2.7
+ * Stable tag: 1.2.7
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -28,12 +28,7 @@ $utm_extra_fields=array(
 	"email"=>"Email",
 	"referral_page"=>"Referral Page URL",
 	"landing_page"=>"Landing Page URL",
-	"user_ip_address"=>"IP Address",
-	"var1"=>"var1",
-	"var2"=>"var2",
-	"var3"=>"var3",
-	"var4"=>"var4",
-	"var5"=>"var5",
+	"user_ip_address"=>"IP Address"
 );
 defined('ABSPATH') or die("No script kiddies please!");
 class OAPUTM
@@ -53,6 +48,12 @@ class OAPUTM
 		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
+		$oap_utm_custom_extra_fields=explode(",", get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5"));
+		foreach($oap_utm_custom_extra_fields as $k=>$v){
+			$v=trim(preg_replace('/[^a-zA-Z0-9\s]/','',$v));
+			$v=str_replace(' ',"_",$v);
+			$this->utm_extra_fields[$v]=$v;
+		}
 		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
 		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
@@ -175,7 +176,9 @@ class OAPUTM
      * Options page callback
      */
     public function create_admin_page(){
-        if(isset($_POST["oap_utm_clear_cache"])){
+		if(isset($_POST["oap_utm_custom_extra_fields"]))
+			add_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]) or update_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]);
+		if(isset($_POST["oap_utm_clear_cache"])){
 			global $wpdb;
 			$wpdb->query( 
 				$wpdb->prepare( 
@@ -394,6 +397,8 @@ class OAPUTM
 										$form_id=trim(substr($str, $start1, $end1-$start1));
 										$form_fields=array();
 										while(($start1=strpos($str, '<input'))!==false){
+if(($start2=strpos($str, '<select'))!==false && $start2<$start1) $start1=$start2;
+if(($start2=strpos($str, '<textarea'))!==false && $start2<$start1) $start1=$start2;
 											if(($end1=strpos($str, '>', $start1))!==false){
 												$temp=substr($str, $start1, $end1-$start1+6);
 												$field_name=$field_title="";
@@ -455,7 +460,7 @@ class OAPUTM
 							}
 							?>
                             </select>
-                            <br /><small>On the first load of the CUV plugins settings page you will only see 10 forms. We limit it to 10 so as not to have the plugin timeout as OP is serving the form API. If you have more than 10 forms, these extra forms will load in to the database of the plugin on further loads of this settings page, 10 at a time.<br /><br />If you update any of your forms you will need to hit the clear cache button to reload the forms.</small>
+                            <br /><small>On the first load of the CUV plugins settings page you will only see 10 forms. We limit it to 10 so as not to have the plugin timeout as OP is serving the form API. If you have more than 10 forms, these extra forms will load in to the database of the plugin on further loads of this settings page, 10 at a time.<br /><br />If you update any of your forms you will need to hit the clear cache button to reload the forms.<br /><br /><input type="submit" name="oap_utm_load_more" class="button button-primary" value="Load More Forms" /></small>
                         </td>
                     </tr>
                     <tr valign="top">
@@ -476,6 +481,15 @@ class OAPUTM
 							}
 							?>
                             </select>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Define Custom Extra Fields<br /><small>If you want to use more fields then write them here seaparated by comma.</small></th>
+                        <td>
+                        	<?php
+							$oap_utm_custom_extra_fields=get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5");
+							?>
+                            <input type="text" name="oap_utm_custom_extra_fields" id="oap_utm_custom_extra_fields" value="<?php echo $oap_utm_custom_extra_fields?>" />
                         </td>
                     </tr>
                     <tr valign="top">
@@ -647,8 +661,13 @@ class OAPUTM
 			}
 		}
 		else{
-			if(isset($_GET[$var])){
-				$val=$_GET[$var];
+			if(isset($_GET[$var]) || ($var=="fname" && isset($_GET["firstname"])) || ($var=="lname" && isset($_GET["lastname"]))){
+				if($var=="fname")
+					$val=$_GET["firstname"];
+				else if($var=="lname")
+					$val=$_GET["lastname"];
+				else
+					$val=$_GET[$var];
 				setcookie("cuv_".$var, $val, strtotime('+1 days'), "/");
 				return $val;
 			}
@@ -744,11 +763,19 @@ class OAPUTM
 								?>
 								if(typeof(oap_utm_forms_fields[$index])!='undefined'){
 									for (key in oap_utm_forms_fields[$index]) {
-										if(key=="user_ip_address"){
-											$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($user_ip_address_response);
-										}
-										else{
-											$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($utm_fields[key]);
+										if(oap_utm_forms_fields[$index][key]!=""){
+											if(key=="user_ip_address"){
+												$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($user_ip_address_response);
+											}
+											else{
+												$this.find("input[name="+oap_utm_forms_fields[$index][key]+"]").val($utm_fields[key]);
+												if($this.find("select[name="+oap_utm_forms_fields[$index][key]+"]").length>0){
+													$this.find("select[name="+oap_utm_forms_fields[$index][key]+"] option[value="+$utm_fields[key]+"]").prop('selected', true);
+												}
+												if($this.find("textarea[name="+oap_utm_forms_fields[$index][key]+"]").length>0){
+													$this.find("textarea[name="+oap_utm_forms_fields[$index][key]+"]").val($utm_fields[key]);
+												}
+											}
 										}
 									}
 								}

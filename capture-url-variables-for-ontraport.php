@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.7
- * Stable tag: 1.2.7
+ * Version: 1.2.8
+ * Stable tag: 1.2.8
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -50,9 +50,10 @@ class OAPUTM
 		$this->utm_extra_fields=$utm_extra_fields;
 		$oap_utm_custom_extra_fields=explode(",", get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5"));
 		foreach($oap_utm_custom_extra_fields as $k=>$v){
-			$v=trim(preg_replace('/[^a-zA-Z0-9\s]/','',$v));
-			$v=str_replace(' ',"_",$v);
-			$this->utm_extra_fields[$v]=$v;
+			$v=trim(preg_replace('/[^a-zA-Z0-9_\s]/','',$v));
+			$v=trim(str_replace(' ',"_",$v));
+			if($v!="")
+				$this->utm_extra_fields[$v]=$v;
 		}
 		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
         add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );

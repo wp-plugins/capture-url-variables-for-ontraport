@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.8
- * Stable tag: 1.2.8
+ * Version: 1.2.9
+ * Stable tag: 1.2.9
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -38,13 +38,36 @@ class OAPUTM
      */
     private $options;
 	private $utm_fields, $utm_fields_values=array();
-	private $url="http://app.itmooti.com/wp-plugins/oap-utm/api.php";
+	private $url;
+	private $plugin_links;
     /**
      * Start up
      */
     public function __construct($utm_fields, $utm_extra_fields){
-		if (!session_id()) {
-			@session_start();
+		$isSecure = false;
+		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+			$isSecure = true;
+		}
+		elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' || !empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] == 'on') {
+			$isSecure = true;
+		}
+		$this->url=($isSecure ? 'https' : 'http')."://app.itmooti.com/wp-plugins/oap-utm/api.php";
+		$request= "plugin_links";
+		$postargs = "plugin=oap-utm&request=".urlencode($request);
+		$session = curl_init($this->url);
+		curl_setopt ($session, CURLOPT_POST, true);
+		curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+		curl_setopt($session, CURLOPT_HEADER, false);
+		curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+		$response = json_decode(curl_exec($session));
+		curl_close($session);
+		if(isset($response->status) && $response->status=="success"){
+			$this->plugin_links=$response->message;
+		}
+		else{
+			$this->plugin_links->support_link="";
+			$this->plugin_links->license_link="";
 		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
@@ -61,9 +84,9 @@ class OAPUTM
 		add_action( 'send_headers', array($this, 'oap_utm_custom_cookies'));
 		add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
 		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
-		$plugin = plugin_basename(__FILE__);
-		add_filter("plugin_action_links_$plugin", array( $this, 'oap_utm_settings_link') );
 		add_shortcode('cuv', array($this, 'shortcode_cuv'));
+		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array($this, 'itmooti_plugin_action_link'));
+		add_filter( 'plugin_row_meta', array($this, 'itmooti_plugin_meta_link'), 10, 2);
     }
 	public function shortcode_cuv($atts){
 		$license_key=get_option('oap_utm_license_key', "");
@@ -100,17 +123,41 @@ class OAPUTM
 		wp_enqueue_script('jquery');
 	}
 	
+	function itmooti_plugin_action_link( $links ) {
+		return array_merge(
+			array(
+				'settings' => '<a href="options-general.php?page=oap-utm-admin">Settings</a>',
+				'support_link' => '<a href="'.$this->plugin_links->support_link.'" target="_blank">Support</a>'
+			),
+			$links
+		);
+	}
+	
+	function itmooti_plugin_meta_link( $links, $file ) {
+		$plugin = plugin_basename(__FILE__);
+		if ( $file == $plugin ) {
+			return array_merge(
+				$links,
+				array(
+					'settings' => '<a href="options-general.php?page=oap-utm-admin">Settings</a>',
+					'support_link' => '<a href="'.$this->plugin_links->support_link.'" target="_blank">Support</a>'
+				)
+			);
+		}
+		return $links;
+	}
+	
 	public function show_license_info(){
 		$license_key=get_option('oap_utm_license_key', "");
 		if(empty($license_key)){
 			echo '<div class="updated">
-        		<p>OAP UTM WP Plugin: How do I get License Key?<br />Please visit this URL <a href="http://app.itmooti.com/wp-plugins/oap-utm/license/">http://app.itmooti.com/wp-plugins/oap-utm/license/</a> to get a License Key .</p>
+        		<p><strong>Capture URL Variables for Ontraport:</strong> How do I get License Key?<br />Please visit this URL <a href="'.$this->plugin_links->license_link.'" target="_blank">'.$this->plugin_links->license_link.'</a> to get a License Key .</p>
 	    	</div>';
 		}
-		$resonse=file_get_contents(plugin_dir_path( __FILE__ )."response.txt");
-		if($resonse!=""){
+		$message=get_option("oap-utm_message", "");
+		if($message!=""){
 			echo '<div class="error">
-        		<p>OAP UTM WP Plugin: '.$response.'</p>
+        		<p><strong>Capture URL Variables for Ontraport:</strong> '.$message.'</p>
 	    	</div>';
 		}
 	}
@@ -122,12 +169,7 @@ class OAPUTM
 		wp_enqueue_script( 'oap_utm_prism', plugins_url('js/js.js', __FILE__), false, '1.0.0' );
 	}
 	
-	public function oap_utm_settings_link($links) { 
-	  	$settings_link = '<a href="options-general.php?page=oap-utm-admin">Settings</a>'; 
-	  	array_unshift($links, $settings_link); 
-	  	return $links; 
-	}
-    /**
+	/**
      * Add options page
      */
     public function add_oap_utm_page(){
@@ -287,12 +329,8 @@ class OAPUTM
 					$response = json_decode(curl_exec($session));
 					curl_close($session);
 					if(isset($response->status) && $response->status=="success"){
-						if(isset($response->message)){
-							file_put_contents(plugin_dir_path( __FILE__ )."response.txt", $response->message);
-						}
-						else{
-							file_put_contents(plugin_dir_path( __FILE__ )."response.txt", "");
-						}
+						if(isset($response->message))
+							add_option("oap-utm_message", $response->message) or update_option("oap-utm_message", $response->message);
 						$oap_utm_api_version=get_option('oap_utm_api_version', "");
 						$oap_utm_app_id=get_option('oap_utm_app_id', "");
 						$oap_utm_api_key=get_option('oap_utm_api_key', "");

@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.9
- * Stable tag: 1.2.9
+ * Version: 1.2.8
+ * Stable tag: 1.2.8
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */

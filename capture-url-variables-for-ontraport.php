@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.2.9
- * Stable tag: 1.2.9
+ * Version: 1.3.0
+ * Stable tag: 1.3.0
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -66,7 +66,8 @@ class OAPUTM
 			$this->plugin_links=$response->message;
 		}
 		else{
-			$this->plugin_links=(object)array("support_link"=>"", "license_link"=>"");
+			$this->plugin_links->support_link="";
+			$this->plugin_links->license_link="";
 		}
 		$this->utm_fields=$utm_fields;
 		$this->utm_extra_fields=$utm_extra_fields;
@@ -218,87 +219,89 @@ class OAPUTM
      * Options page callback
      */
     public function create_admin_page(){
-		if(isset($_POST["oap_utm_custom_extra_fields"]))
-			add_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]) or update_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]);
 		if(isset($_POST["oap_utm_clear_cache"])){
 			global $wpdb;
 			$wpdb->query( 
 				$wpdb->prepare( 
 					"DELETE FROM $wpdb->options
 					 WHERE option_name like %s"					
-				, 'oap_utm_form_id_%')
+				, 'oap_utm_form_id\_%')
 			);
 		}
-		if(isset($_POST["oap_utm_license_key"]))
-			add_option("oap_utm_license_key", $_POST["oap_utm_license_key"]) or update_option("oap_utm_license_key", $_POST["oap_utm_license_key"]);
-		if(isset($_POST["oap_utm_api_version"]))
-			add_option("oap_utm_api_version", $_POST["oap_utm_api_version"]) or update_option("oap_utm_api_version", $_POST["oap_utm_api_version"]);
-		if(isset($_POST["oap_utm_app_id"]))
-			add_option("oap_utm_app_id", $_POST["oap_utm_app_id"]) or update_option("oap_utm_app_id", $_POST["oap_utm_app_id"]);
-		if(isset($_POST["oap_utm_api_key"]))
-			add_option("oap_utm_api_key", $_POST["oap_utm_api_key"]) or update_option("oap_utm_api_key", $_POST["oap_utm_api_key"]);
-		
-		if(isset($_POST["oap_utm_extra_fields"])){
-			$oap_utm_extra_fields=array();
-			foreach($_POST["oap_utm_extra_fields"] as $k=>$v){
-				$oap_utm_extra_fields[]=$v;
-			}
-			$oap_utm_extra_fields=serialize($oap_utm_extra_fields);
-			add_option("oap_utm_extra_fields", $oap_utm_extra_fields) or update_option("oap_utm_extra_fields", $oap_utm_extra_fields);
-		}		
-		
-		if(isset($_POST["oap_utm_form_ids"])){
-			$oap_utm_form_ids=$oap_utm_user_forms=array();
-			foreach($_POST["oap_utm_form_ids"] as $k=>$v){
-				$oap_utm_form_ids[]=$v;
-				if(isset($_POST["form_id_".$v])){
-					$oap_utm_fields=get_option("oap_utm_fields", "");
-					if(!empty($oap_utm_fields))
-						$oap_utm_fields=unserialize($oap_utm_fields);
-					else
-						$oap_utm_fields=array();
-					$oap_utm_api_version=get_option('oap_utm_api_version', "");
-					$oap_utm_api_version=$oap_utm_api_version!=""? esc_attr($oap_utm_api_version): "api.ontraport.com";
-					if($oap_utm_api_version=="api.moon-ray.com"){
-						foreach($this->utm_fields as $k1=>$v1){
-							if(in_array($k1, $oap_utm_fields)){
-								if(isset($_POST["utm_field_".$k1."_".$v])){
-									$oap_utm_user_forms[$v][$k1]=$_POST["utm_field_".$k1."_".$v];
+		else{
+			if(isset($_POST["oap_utm_custom_extra_fields"]))
+				add_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]) or update_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]);
+			if(isset($_POST["oap_utm_license_key"]))
+				add_option("oap_utm_license_key", $_POST["oap_utm_license_key"]) or update_option("oap_utm_license_key", $_POST["oap_utm_license_key"]);
+			if(isset($_POST["oap_utm_api_version"]))
+				add_option("oap_utm_api_version", $_POST["oap_utm_api_version"]) or update_option("oap_utm_api_version", $_POST["oap_utm_api_version"]);
+			if(isset($_POST["oap_utm_app_id"]))
+				add_option("oap_utm_app_id", $_POST["oap_utm_app_id"]) or update_option("oap_utm_app_id", $_POST["oap_utm_app_id"]);
+			if(isset($_POST["oap_utm_api_key"]))
+				add_option("oap_utm_api_key", $_POST["oap_utm_api_key"]) or update_option("oap_utm_api_key", $_POST["oap_utm_api_key"]);
+			
+			if(isset($_POST["oap_utm_extra_fields"])){
+				$oap_utm_extra_fields=array();
+				foreach($_POST["oap_utm_extra_fields"] as $k=>$v){
+					$oap_utm_extra_fields[]=$v;
+				}
+				$oap_utm_extra_fields=serialize($oap_utm_extra_fields);
+				add_option("oap_utm_extra_fields", $oap_utm_extra_fields) or update_option("oap_utm_extra_fields", $oap_utm_extra_fields);
+			}		
+			
+			if(isset($_POST["oap_utm_form_ids"])){
+				$oap_utm_form_ids=$oap_utm_user_forms=array();
+				foreach($_POST["oap_utm_form_ids"] as $k=>$v){
+					$oap_utm_form_ids[]=$v;
+					if(isset($_POST["form_id_".$v])){
+						$oap_utm_fields=get_option("oap_utm_fields", "");
+						if(!empty($oap_utm_fields))
+							$oap_utm_fields=unserialize($oap_utm_fields);
+						else
+							$oap_utm_fields=array();
+						$oap_utm_api_version=get_option('oap_utm_api_version', "");
+						$oap_utm_api_version=$oap_utm_api_version!=""? esc_attr($oap_utm_api_version): "api.ontraport.com";
+						if($oap_utm_api_version=="api.moon-ray.com"){
+							foreach($this->utm_fields as $k1=>$v1){
+								if(in_array($k1, $oap_utm_fields)){
+									if(isset($_POST["utm_field_".$k1."_".$v])){
+										$oap_utm_user_forms[$v][$k1]=$_POST["utm_field_".$k1."_".$v];
+									}
 								}
 							}
 						}
-					}
-					foreach($this->utm_extra_fields as $k1=>$v1){
-						if(isset($_POST["utm_field_".$k1."_".$v])){
-							$oap_utm_user_forms[$v][$k1]=$_POST["utm_field_".$k1."_".$v];
+						foreach($this->utm_extra_fields as $k1=>$v1){
+							if(isset($_POST["utm_field_".$k1."_".$v])){
+								$oap_utm_user_forms[$v][$k1]=$_POST["utm_field_".$k1."_".$v];
+							}
 						}
 					}
 				}
+				$oap_utm_form_ids=serialize($oap_utm_form_ids);
+				add_option("oap_utm_form_ids", $oap_utm_form_ids) or update_option("oap_utm_form_ids", $oap_utm_form_ids);
+				$oap_utm_user_forms=serialize($oap_utm_user_forms);
+				add_option("oap_utm_user_forms", $oap_utm_user_forms) or update_option("oap_utm_user_forms", $oap_utm_user_forms);		
 			}
-			$oap_utm_form_ids=serialize($oap_utm_form_ids);
-			add_option("oap_utm_form_ids", $oap_utm_form_ids) or update_option("oap_utm_form_ids", $oap_utm_form_ids);
-			$oap_utm_user_forms=serialize($oap_utm_user_forms);
-			add_option("oap_utm_user_forms", $oap_utm_user_forms) or update_option("oap_utm_user_forms", $oap_utm_user_forms);		
-		}
-		
-		//UTM Fields
-		if(isset($_POST["oap_utm_fields"])){
-			$oap_utm_fields=array();
-			foreach($_POST["oap_utm_fields"] as $k=>$v){
-				$oap_utm_fields[]=$v;
+			
+			//UTM Fields
+			if(isset($_POST["oap_utm_fields"])){
+				$oap_utm_fields=array();
+				foreach($_POST["oap_utm_fields"] as $k=>$v){
+					$oap_utm_fields[]=$v;
+				}
+				$oap_utm_fields=serialize($oap_utm_fields);
+				add_option("oap_utm_fields", $oap_utm_fields) or update_option("oap_utm_fields", $oap_utm_fields);
 			}
-			$oap_utm_fields=serialize($oap_utm_fields);
-			add_option("oap_utm_fields", $oap_utm_fields) or update_option("oap_utm_fields", $oap_utm_fields);
-		}
-		$oap_utm_fields=get_option("oap_utm_fields", "");
-		if(!empty($oap_utm_fields))
-			$oap_utm_fields=unserialize($oap_utm_fields);
-		else
-			$oap_utm_fields=array();
-		foreach($this->utm_fields as $k=>$v){
-        	if(in_array($k, $oap_utm_fields)){
-				if(isset($_POST["utm_fields_custom_".$k]) && !empty($_POST["utm_fields_custom_".$k])){
-					add_option("utm_fields_custom_".$k, $_POST["utm_fields_custom_".$k]) or update_option("utm_fields_custom_".$k, $_POST["utm_fields_custom_".$k]);
+			$oap_utm_fields=get_option("oap_utm_fields", "");
+			if(!empty($oap_utm_fields))
+				$oap_utm_fields=unserialize($oap_utm_fields);
+			else
+				$oap_utm_fields=array();
+			foreach($this->utm_fields as $k=>$v){
+				if(in_array($k, $oap_utm_fields)){
+					if(isset($_POST["utm_fields_custom_".$k]) && !empty($_POST["utm_fields_custom_".$k])){
+						add_option("utm_fields_custom_".$k, $_POST["utm_fields_custom_".$k]) or update_option("utm_fields_custom_".$k, $_POST["utm_fields_custom_".$k]);
+					}
 				}
 			}
 		}
@@ -408,7 +411,7 @@ class OAPUTM
 			if($response!="" && strpos($response, "<error>Invalid AppId / Key Combination</error>")===false){
 				$forms=array();
 				$cnt=0;
-				while(($start=strpos($response, '<form'))!==false && $cnt<10){
+				while(($start=strpos($response, '<form'))!==false && $cnt<20){
 					if(($end=strpos($response, '</form>', $start))!==false){
 						$form=substr($response, $start, $end-$start+7);
 						$id=explode("id='", $form);
@@ -454,13 +457,13 @@ if(($start2=strpos($str, '<textarea'))!==false && $start2<$start1) $start1=$star
 										}
 										$forms[]=array(
 											"id" => $form_id,
-											"title" => strip_tags($form),
+											"title" => $id." - ".strip_tags($form),
 											"form_fields" => $form_fields
 
 										);
 										add_option('oap_utm_form_id_'.$id, serialize(array(
 											"id" => $form_id,
-											"title" => strip_tags($form),
+											"title" => $id." - ".strip_tags($form),
 											"form_fields" => $form_fields
 										)));
 									}
@@ -498,7 +501,7 @@ if(($start2=strpos($str, '<textarea'))!==false && $start2<$start1) $start1=$star
 							}
 							?>
                             </select>
-                            <br /><small>On the first load of the CUV plugins settings page you will only see 10 forms. We limit it to 10 so as not to have the plugin timeout as OP is serving the form API. If you have more than 10 forms, these extra forms will load in to the database of the plugin on further loads of this settings page, 10 at a time.<br /><br />If you update any of your forms you will need to hit the clear cache button to reload the forms.<br /><br /><input type="submit" name="oap_utm_load_more" class="button button-primary" value="Load More Forms" /></small>
+                            <br /><small>On the first load of the CUV plugins settings page you will only see 10 forms. We limit it to 10 so as not to have the plugin timeout as OP is serving the form API. If you have more than 10 forms, these extra forms will load in to the database of the plugin on further loads of this settings page, 10 at a time.<br /><br />If you update any of your forms you will need to hit the clear cache button to reload the forms.<br /><br /><a name="oap_utm_load_more" class="button button-primary" href="<?php echo $_SERVER['REQUEST_URI']?>">Load More Forms</a></small>
                         </td>
                     </tr>
                     <tr valign="top">
@@ -525,8 +528,8 @@ if(($start2=strpos($str, '<textarea'))!==false && $start2<$start1) $start1=$star
                         <th scope="row">Define Custom Extra Fields<br /><small>If you want to use more fields then write them here seaparated by comma.</small></th>
                         <td>
                         	<?php
-							$oap_utm_custom_extra_fields=get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5");
-							?>
+				$oap_utm_custom_extra_fields=get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5");
+				?>
                             <input type="text" name="oap_utm_custom_extra_fields" id="oap_utm_custom_extra_fields" value="<?php echo $oap_utm_custom_extra_fields?>" />
                         </td>
                     </tr>
@@ -658,6 +661,7 @@ if(($start2=strpos($str, '<textarea'))!==false && $start2<$start1) $start1=$star
 						if (ip2long($ips[$i]) != -1) {
 							$ip = $ips[$i];
 							break;
+
 						}
 					}
 				}

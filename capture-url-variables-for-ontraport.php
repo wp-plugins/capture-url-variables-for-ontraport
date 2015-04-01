@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.3.1
- * Stable tag: 1.3.1
+ * Version: 1.3.2
+ * Stable tag: 1.3.2
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -51,7 +51,7 @@ class OAPUTM
 		elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' || !empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] == 'on') {
 			$isSecure = true;
 		}
-		$this->url=($isSecure ? 'https' : 'http')."://app.itmooti.com/wp-plugins/oap-utm/api.php";
+		$this->url=($isSecure ? 'http' : 'http')."://app.itmooti.com/wp-plugins/oap-utm/api.php";
 		$request= "plugin_links";
 		$postargs = "plugin=oap-utm&request=".urlencode($request);
 		$session = curl_init($this->url);

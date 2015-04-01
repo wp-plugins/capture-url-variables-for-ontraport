@@ -1,4 +1,4 @@
-=== Capture URL Variables for Ontraport ===
+﻿=== Capture URL Variables for Ontraport ===
 Contributors: itmooti
 Donate link: https://www.itmooti.com/ontraport-tracking-made-easy-order/
 Tags: comments, spam
@@ -61,11 +61,7 @@ Nothing yet.
 
 == Changelog ==
 
-= 1.3.2 =
-
-* Fixed SSL Connection Issue
-
-= 1.3.1 =
+= 1.3.0 =
 
 * Fixed Warning Display
 

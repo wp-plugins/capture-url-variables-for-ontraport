@@ -3,8 +3,8 @@
  * Plugin Name: Capture URL Variables for Ontraport
  * Plugin URI: http://www.itmooti.com/
  * Description: A plugin to add UTM and Referring Page fields on Ontraport Smart Forms
- * Version: 1.3.3
- * Stable tag: 1.3.3
+ * Version: 1.3.4
+ * Stable tag: 1.3.4
  * Author: ITMOOTI
  * Author URI: http://www.itmooti.com/
  */
@@ -40,10 +40,46 @@ class OAPUTM
 	private $utm_fields, $utm_fields_values=array();
 	private $url;
 	private $plugin_links;
-    /**
+	/**
      * Start up
      */
     public function __construct($utm_fields, $utm_extra_fields){
+		$this->plugin_links=(object)array("support_link"=>get_option("oap_utm_plugin_link_support_link", ""), "license_link"=>get_option("oap_utm_plugin_link_license_link", ""));
+		$this->utm_fields=$utm_fields;
+		$this->utm_extra_fields=$utm_extra_fields;
+		$oap_utm_custom_extra_fields=explode(",", get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5"));
+		foreach($oap_utm_custom_extra_fields as $k=>$v){
+			$v=trim(preg_replace('/[^a-zA-Z0-9_\s]/','',$v));
+			$v=trim(str_replace(' ',"_",$v));
+			if($v!="")
+				$this->utm_extra_fields[$v]=$v;
+		}
+		register_activation_hook(__FILE__, array($this, 'plugin_activation'));
+		add_action('plugin_scheduled_event', array($this, 'plugin_authentication'));
+		register_deactivation_hook(__FILE__, array($this, 'plugin_deactivation'));
+		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
+        add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
+		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
+		add_action( 'send_headers', array($this, 'oap_utm_custom_cookies'));
+		if($this->is_authenticated()) add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
+		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
+		add_shortcode('cuv', array($this, 'shortcode_cuv'));
+		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array($this, 'itmooti_plugin_action_link'));
+		add_filter( 'plugin_row_meta', array($this, 'itmooti_plugin_meta_link'), 10, 2);
+    }
+	public function is_authenticated(){
+		if(get_option("oap_utm_plugin_authenticated", "no")=="yes")
+			return true;
+		else
+			return false;
+	}
+	public function plugin_activation(){
+		wp_schedule_event(time(), 'twicedaily', 'plugin_scheduled_event');
+	}
+	public function plugin_deactivation(){
+		wp_clear_scheduled_hook('plugin_scheduled_event');
+	}
+	public function plugin_authentication(){
 		$isSecure = false;
 		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
 			$isSecure = true;
@@ -65,31 +101,9 @@ class OAPUTM
 		$response = json_decode(curl_exec($session));
 		curl_close($session);
 		if(isset($response->status) && $response->status=="success"){
-			$this->plugin_links=$response->message;
+			add_option("oap_utm_plugin_link_support_link", $response->message->support_link) or update_option("oap_utm_plugin_link_support_link", $response->message->support_link);
+			add_option("oap_utm_plugin_link_license_link", $response->message->license_link) or update_option("oap_utm_plugin_link_license_link", $response->message->license_link);
 		}
-		else{
-			$this->plugin_links=(object)array("support_link"=>"", "license_link"=>"");
-		}
-		$this->utm_fields=$utm_fields;
-		$this->utm_extra_fields=$utm_extra_fields;
-		$oap_utm_custom_extra_fields=explode(",", get_option("oap_utm_custom_extra_fields", "var1,var2,var3,var4,var5"));
-		foreach($oap_utm_custom_extra_fields as $k=>$v){
-			$v=trim(preg_replace('/[^a-zA-Z0-9_\s]/','',$v));
-			$v=trim(str_replace(' ',"_",$v));
-			if($v!="")
-				$this->utm_extra_fields[$v]=$v;
-		}
-		add_action('admin_enqueue_scripts', array( $this, 'load_admin_style'));
-        add_action( 'admin_menu', array( $this, 'add_oap_utm_page' ) );
-		add_action('wp_enqueue_scripts', array($this, 'oap_utm_enqueue_js'));
-		add_action( 'send_headers', array($this, 'oap_utm_custom_cookies'));
-		add_action('wp_head', array($this, 'oap_utm_custom_js'), 300);
-		add_action( 'admin_notices', array( $this, 'show_license_info' ) );
-		add_shortcode('cuv', array($this, 'shortcode_cuv'));
-		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array($this, 'itmooti_plugin_action_link'));
-		add_filter( 'plugin_row_meta', array($this, 'itmooti_plugin_meta_link'), 10, 2);
-    }
-	public function shortcode_cuv($atts){
 		$license_key=get_option('oap_utm_license_key', "");
 		if(!empty($license_key)){
 			$request= "verify";
@@ -104,20 +118,36 @@ class OAPUTM
 			$response = json_decode(curl_exec($session));
 			curl_close($session);
 			if(isset($response->status) && $response->status=="success"){
-				if(isset($atts["field"])){
-					$field=$atts["field"];
-					if(isset($_GET[$field])){
-						return $_GET[$field];
-					}
-					else if(isset($_COOKIE["cuv_".$field])){
-						$value=$_COOKIE["cuv_".$field];
-						if($value=="undefined")
-							$value="";
-						return $value;
-					}
-					else{
-						return "";
-					}
+				update_option("oap_utm_plugin_authenticated", "yes");
+				if(isset($response->message))
+					update_option("oap-utm_message", $response->message);
+			}
+			else if(isset($response->status) && $response->status=="error"){
+				update_option("oap_utm_plugin_authenticated", "no");
+				if(isset($response->message))
+					update_option("oap-utm_message", $response->message);
+			}
+		}
+		else{
+			update_option("oap_utm_plugin_authenticated", "no");
+			update_option("itmooti-utm_message", "Please enter valid license key");
+		}
+	}
+	public function shortcode_cuv($atts){
+		if($this->is_authenticated()){
+			if(isset($atts["field"])){
+				$field=$atts["field"];
+				if(isset($_GET[$field])){
+					return $_GET[$field];
+				}
+				else if(isset($_COOKIE["cuv_".$field])){
+					$value=$_COOKIE["cuv_".$field];
+					if($value=="undefined")
+						$value="";
+					return $value;
+				}
+				else{
+					return "";
 				}
 			}
 		}
@@ -234,12 +264,13 @@ class OAPUTM
 		else{
 			if(isset($_POST["oap_utm_custom_extra_fields"]))
 				add_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]) or update_option("oap_utm_custom_extra_fields", $_POST["oap_utm_custom_extra_fields"]);
-			if(isset($_POST["oap_utm_license_key"]))
+			if(isset($_POST["oap_utm_license_key"])){
 				add_option("oap_utm_license_key", $_POST["oap_utm_license_key"]) or update_option("oap_utm_license_key", $_POST["oap_utm_license_key"]);
+				$this->plugin_authentication();
+			}
 			if(isset($_POST["oap_utm_api_version"]))
 				add_option("oap_utm_api_version", $_POST["oap_utm_api_version"]) or update_option("oap_utm_api_version", $_POST["oap_utm_api_version"]);
-			if(isset($_POST["oap_utm_app_id"]))
-				add_option("oap_utm_app_id", $_POST["oap_utm_app_id"]) or update_option("oap_utm_app_id", $_POST["oap_utm_app_id"]);
+			if(isset($_POST["oap_utm_app_id"]))             				add_option("oap_utm_app_id", $_POST["oap_utm_app_id"]) or update_option("oap_utm_app_id", $_POST["oap_utm_app_id"]);
 			if(isset($_POST["oap_utm_api_key"]))
 				add_option("oap_utm_api_key", $_POST["oap_utm_api_key"]) or update_option("oap_utm_api_key", $_POST["oap_utm_api_key"]);
 			
@@ -323,54 +354,39 @@ class OAPUTM
                    	</tr>
               	</table>
 				<?php				
-				if(!empty($license_key)){
-					$request= "verify";
-					$postargs = "domain=".urlencode($_SERVER['HTTP_HOST'])."&license_key=".urlencode($license_key)."&request=".urlencode($request);
-					$session = curl_init($this->url);
-					curl_setopt ($session, CURLOPT_POST, true);
-					curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-					curl_setopt($session, CURLOPT_HEADER, false);
-					curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-					curl_setopt($session, CURLOPT_CONNECTTIMEOUT ,3); 
-					curl_setopt($session, CURLOPT_TIMEOUT, 3);
-					$response = json_decode(curl_exec($session));
-					curl_close($session);
-					if(isset($response->status) && $response->status=="success"){
-						if(isset($response->message))
-							add_option("oap-utm_message", $response->message) or update_option("oap-utm_message", $response->message);
-						$oap_utm_api_version=get_option('oap_utm_api_version', "");
-						$oap_utm_app_id=get_option('oap_utm_app_id', "");
-						$oap_utm_api_key=get_option('oap_utm_api_key', "");
-						?>
-						<h3>OAP Credentials</h3>
-		                Provide OAP Credentials below:
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">API Version</th>
-                                <td>
-                                	<select id="oap_utm_api_version" name="oap_utm_api_version">
-                                        <option value="api.ontraport.com"<?php echo ($oap_utm_api_version=="api.ontraport.com"? ' selected="selected"':"")?>>V3.0</option>
-                                        <option value="api.moon-ray.com"<?php echo ($oap_utm_api_version=="api.moon-ray.com"? ' selected="selected"':"")?>>V2.4</option>
-                                    </select>
-                               	</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">APP ID</th>
-                                <td><input type="text" name="oap_utm_app_id" id="oap_utm_app_id" value="<?php echo $oap_utm_app_id?>" /></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">API Key</th>
-                                <td><input type="text" name="oap_utm_api_key" id="oap_utm_api_key" value="<?php echo $oap_utm_api_key?>" /></td>
-                            </tr>
-                        </table>
-						<?php
-						$this->get_oap_forms();
-					}
-					else{
-						if(isset($response->message))
-							echo $response->message;
-						else
-							echo "Error in license key verification. Try again later";
+				if($this->is_authenticated()){
+					$oap_utm_api_version=get_option('oap_utm_api_version', "");
+					$oap_utm_app_id=get_option('oap_utm_app_id', "");
+					$oap_utm_api_key=get_option('oap_utm_api_key', "");
+					?>
+					<h3>OAP Credentials</h3>
+					Provide OAP Credentials below:
+					<table class="form-table">
+						<tr>
+							<th scope="row">API Version</th>
+							<td>
+								<select id="oap_utm_api_version" name="oap_utm_api_version">
+									<option value="api.ontraport.com"<?php echo ($oap_utm_api_version=="api.ontraport.com"? ' selected="selected"':"")?>>V3.0</option>
+									<option value="api.moon-ray.com"<?php echo ($oap_utm_api_version=="api.moon-ray.com"? ' selected="selected"':"")?>>V2.4</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">APP ID</th>
+							<td><input type="text" name="oap_utm_app_id" id="oap_utm_app_id" value="<?php echo $oap_utm_app_id?>" /></td>
+						</tr>
+						<tr>
+							<th scope="row">API Key</th>
+							<td><input type="text" name="oap_utm_api_key" id="oap_utm_api_key" value="<?php echo $oap_utm_api_key?>" /></td>
+						</tr>
+					</table>
+					<?php
+					$this->get_oap_forms();
+				}
+				else{
+					$message=get_option("oap-utm_message", "");
+					if($message!=""){
+						echo $message;
 					}
 				}
                 submit_button(); 
